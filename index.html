@@ -23,6 +23,7 @@
           <button id="btn-continue" class="btn" hidden>이어서 살기</button>
         </div>
       </div>
+      <section id="last-life" class="card last-life" hidden aria-label="지난 인생"></section>
       <ul class="how">
         <li><b>다음 해</b> 버튼을 누르면 한 살씩 먹고, 사건이 생기면 선택합니다.</li>
         <li>건강·행복·지능·관계·돈이 <b>선택과 운</b>에 따라 바뀝니다.</li>
@@ -69,6 +70,7 @@
     <!-- 플레이 화면 -->
     <section id="screen-play" class="screen" hidden>
       <header class="life-head">
+        <div id="p-stages" class="stage-track" aria-hidden="true"></div>
         <div class="life-row">
           <div class="who">
             <p><span id="p-name" class="name"></span> <span id="p-meta" class="meta"></span></p>
@@ -77,7 +79,7 @@
           <p class="age"><span id="p-age">0</span><small>세</small></p>
         </div>
         <div id="p-stats" class="stats compact"></div>
-        <p class="money">순자산 <b id="p-money"></b></p>
+        <p class="money">순자산 <b id="p-money"></b> <span id="p-money-delta" class="delta"></span></p>
       </header>
       <ol id="log" class="log" aria-live="polite"></ol>
       <div class="actionbar">
@@ -164,10 +166,24 @@
       <p id="ev-text" class="ev-text"></p>
       <div id="ev-choices" class="choices"></div>
       <div id="ev-result" hidden>
+        <p id="ev-picked" class="ev-picked"></p>
         <p id="ev-result-text" class="ev-result"></p>
         <div id="ev-changes" class="chips"></div>
         <button id="btn-ev-ok" class="btn primary wide">계속</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 죽음 연출 -->
+  <div id="curtain" class="curtain" hidden>
+    <div class="curtain-inner" role="dialog" aria-modal="true" aria-labelledby="c-name">
+      <p class="curtain-lead">그렇게 한 사람의 인생이 끝났습니다.</p>
+      <p class="curtain-name"><span class="go">故</span> <span id="c-name"></span></p>
+      <p id="c-years" class="curtain-years"></p>
+      <p id="c-cause" class="curtain-cause"></p>
+      <p id="c-epitaph" class="curtain-epitaph"></p>
+      <span class="curtain-seal" aria-hidden="true">卒</span>
+      <button id="btn-curtain" class="btn curtain-btn">인생 정산 보기</button>
     </div>
   </div>
 

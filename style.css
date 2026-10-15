@@ -21,6 +21,10 @@
   --c-money: #1f3a5f;
   --shadow: 0 1px 2px rgba(20, 30, 25, 0.05), 0 6px 20px rgba(20, 30, 25, 0.06);
   --scrim: rgba(18, 24, 21, 0.45);
+  --curtain: #0f1211;
+  --curtain-ink: #eef1ee;
+  --curtain-muted: #9aa49e;
+  --curtain-seal: #e2493d;
 
   --font-display: 'Gowun Batang', 'Nanum Myeongjo', 'AppleMyungjo', 'Batang', serif;
   --font-body: 'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
@@ -213,12 +217,27 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* ---------- 능력치 막대 ---------- */
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
-.stat { display: grid; grid-template-columns: 34px 1fr 28px; align-items: center; gap: 8px; font-size: var(--text-sm); }
+.stat { display: grid; grid-template-columns: 30px 1fr 26px 28px; align-items: center; gap: 6px; font-size: var(--text-sm); }
 .stat-label { color: var(--ink-2); }
 .stat-bar { height: 6px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
 .stat-bar > i { display: block; height: 100%; border-radius: 999px; background: var(--c); transition: width 0.4s; }
 .stat-num { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
 .stats.compact { gap: 6px 14px; }
+.delta {
+  font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: left;
+  opacity: 0; white-space: nowrap;
+}
+.delta.up { color: var(--good); }
+.delta.down { color: var(--bad); }
+.delta.show { opacity: 1; animation: delta-fade 2.6s ease-out forwards; }
+@keyframes delta-fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+
+/* 인생 단계 막대 */
+.stage-track { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.stage { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--muted); min-width: 0; text-align: center; }
+.stage i { display: block; height: 4px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
+.stage i b { display: block; height: 100%; background: var(--accent); transition: width 0.4s; }
+.stage.now { color: var(--ink); font-weight: 700; }
 
 /* ---------- 플레이 화면 ---------- */
 .life-head {
@@ -241,14 +260,19 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .log { list-style: none; margin: 0; padding: 0 0 96px; display: flex; flex-direction: column; }
 .year {
-  display: grid; grid-template-columns: 52px 1fr; gap: 12px;
-  padding: 12px 0; border-bottom: 1px solid var(--line);
+  display: grid; grid-template-columns: 64px 1fr; gap: 12px;
+  padding: 12px 8px; margin-inline: -8px;
+  border-bottom: 1px solid var(--line);
 }
+.year.quiet { padding-block: 8px; }
+.year.quiet .year-age { font-size: var(--text-sm); }
+.year.fresh { animation: fresh 1.2s ease-out; }
+@keyframes fresh { from { background: var(--accent-soft); } to { background: transparent; } }
 .year-age { font-family: var(--font-display); font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 1px; }
 .year-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .entry { font-size: var(--text-sm); color: var(--ink-2); }
 .entry b { color: var(--ink); font-weight: 700; }
-.entry.event b { display: block; }
+.entry.event b, .entry.luck b, .entry.death b { display: block; }
 .entry .pick { color: var(--accent); font-weight: 500; }
 .entry.quiet { color: var(--muted); }
 .entry.luck { border-left: 2px solid var(--line); padding-left: 10px; }
@@ -300,6 +324,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .choice:hover { border-color: var(--accent); background: var(--accent-soft); }
 .choice .key { color: var(--muted); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
 #ev-result { display: flex; flex-direction: column; gap: 14px; }
+.ev-picked { font-size: var(--text-sm); color: var(--accent); font-weight: 500; }
+.sheet.died .ev-result { color: var(--seal); }
 .ev-result { font-family: var(--font-display); font-size: var(--text-lg); line-height: 1.55; }
 
 /* ---------- 엔딩 ---------- */
@@ -376,6 +402,49 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .full-log summary { cursor: pointer; font-family: var(--font-display); font-weight: 700; }
 .full-log .log { padding-bottom: 0; }
 
+/* ---------- 지난 인생 카드 ---------- */
+.last-life { gap: 4px; }
+.last-name { font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); }
+.last-name .go { color: var(--muted); font-weight: 400; }
+.last-name small { font-family: var(--font-body); font-weight: 400; font-size: var(--text-sm); color: var(--muted); margin-left: 6px; }
+.last-meta { font-size: var(--text-sm); color: var(--ink-2); }
+.last-title { font-size: var(--text-sm); }
+.last-title b { font-family: var(--font-display); }
+
+/* ---------- 죽음 연출 ---------- */
+.curtain {
+  position: fixed; inset: 0; z-index: 40;
+  background: var(--curtain); color: var(--curtain-ink);
+  display: grid; place-items: center; text-align: center;
+  padding: max(24px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px));
+  animation: curtain-in 0.8s ease-out both;
+}
+.curtain-inner { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 420px; }
+.curtain-inner > * { animation: rise-in 0.9s ease-out both; }
+.curtain-lead { color: var(--curtain-muted); font-size: var(--text-sm); animation-delay: 0.3s; }
+.curtain-name { font-family: var(--font-display); font-weight: 700; font-size: 34px; margin-top: 12px; animation-delay: 0.9s; }
+.curtain-name .go { color: var(--curtain-muted); font-weight: 400; }
+.curtain-years { color: var(--curtain-muted); letter-spacing: 0.08em; font-variant-numeric: tabular-nums; animation-delay: 1.2s; }
+.curtain-cause { font-size: var(--text-sm); animation-delay: 1.5s; }
+.curtain-epitaph { font-family: var(--font-display); font-size: var(--text-lg); margin-top: 8px; animation-delay: 1.9s; }
+.curtain-epitaph::before { content: '“'; }
+.curtain-epitaph::after { content: '”'; }
+.curtain-seal {
+  width: 56px; height: 56px; margin-top: 14px;
+  border: 2px solid var(--curtain-seal); border-radius: 8px; color: var(--curtain-seal);
+  font-family: var(--font-display); font-weight: 700; font-size: 30px;
+  display: grid; place-items: center; transform: rotate(-8deg);
+  animation: stamp 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both; animation-delay: 2.5s;
+}
+.curtain-btn {
+  margin-top: 22px; background: var(--curtain-ink); color: var(--curtain); border-color: transparent;
+  animation-delay: 3s;
+}
+.curtain-btn:hover { background: var(--curtain-ink); filter: brightness(0.92); }
+@keyframes curtain-in { from { opacity: 0; } }
+@keyframes rise-in { from { opacity: 0; transform: translateY(10px); } }
+@keyframes stamp { from { opacity: 0; transform: rotate(-8deg) scale(2.4); } }
+
 /* ---------- 토스트 ---------- */
 .toast {
   position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 30;
@@ -390,6 +459,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   :root { --text-hero: 38px; }
   .stats { grid-template-columns: 1fr; }
   .stats.compact { grid-template-columns: 1fr 1fr; }
+  .year { grid-template-columns: 58px 1fr; }
   .dex-summary { grid-template-columns: repeat(2, 1fr); }
   .form-row { grid-template-columns: 88px 1fr; }
   .age { font-size: 34px; }

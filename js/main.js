@@ -11,6 +11,16 @@ let openEv = null;      // 열려 있는 사건
 let autoTimer = null;
 let renderedLogs = 0;
 let lastResult = null;
+let lastShown = null;   // 직전에 화면에 보여 준 능력치 (변화량 표시용)
+
+const STAGES = [
+  { name: '유년기', from: 0, to: 12 },
+  { name: '청소년기', from: 13, to: 19 },
+  { name: '청년기', from: 20, to: 39 },
+  { name: '중년기', from: 40, to: 64 },
+  { name: '노년기', from: 65, to: 100 },
+];
+function stageOf(age) { return STAGES.find((st) => age <= st.to) || STAGES[STAGES.length - 1]; }
 
 // ---------- 저장 (브라우저 localStorage, 실패해도 게임은 계속) ----------
 
@@ -53,8 +63,24 @@ function statBars(s) {
       <span class="stat-label">${STAT_INFO[k].label}</span>
       <span class="stat-bar"><i style="width:${v}%"></i></span>
       <span class="stat-num">${v}</span>
+      <span class="delta"></span>
     </div>`;
   }).join('');
+}
+
+// 변화량 표시: 같은 요소의 애니메이션을 다시 시작하려면 클래스를 뺐다가 다시 붙입니다.
+function flashDelta(el, delta, text) {
+  el.classList.remove('show', 'up', 'down');
+  if (!delta) { el.textContent = ''; return; }
+  el.textContent = text;
+  void el.offsetWidth;
+  el.classList.add('show', delta > 0 ? 'up' : 'down');
+}
+
+function viewSnapshot(s) {
+  const snap = { net: Math.round(netWorth(s)) };
+  for (const k of STATS) snap[k] = Math.round(s[k]);
+  return snap;
 }
 
 function changeChip(c) {
@@ -71,8 +97,21 @@ function renderStart() {
   const canContinue = saved && saved.v === 1 && saved.alive;
   $('btn-continue').hidden = !canContinue;
   if (canContinue) $('btn-continue').textContent = `이어서 살기 · ${saved.name} ${saved.age}세`;
+  renderLastLife();
   renderDex();
   show('start');
+}
+
+function renderLastLife() {
+  const last = loadDex().last;
+  $('last-life').hidden = !last;
+  if (!last) return;
+  const cause = DEATHS[last.cause] ? DEATHS[last.cause].name : '';
+  $('last-life').innerHTML = `
+    <p class="eyebrow">지난 인생</p>
+    <p class="last-name"><span class="go">故</span> ${esc(last.name)}<small>${last.birthYear} – ${last.birthYear + last.age}</small></p>
+    <p class="last-meta">향년 ${last.age}세 · ${esc(cause)}</p>
+    <p class="last-title"><b>${esc(last.title)}</b> · ${esc(last.grade)}등급 ${last.total}점</p>`;
 }
 
 function renderDex() {
@@ -121,6 +160,10 @@ function newBirth() {
 function startPlay() {
   renderedLogs = 0;
   $('log').innerHTML = '';
+  $('p-stats').innerHTML = statBars(life);
+  $('p-stages').innerHTML = STAGES.map((st) => `<span class="stage"><i><b></b></i>${st.name}</span>`).join('');
+  lastShown = viewSnapshot(life);
+  flashDelta($('p-money-delta'), 0, '');
   renderHead();
   appendLogs(false);
   show('play');
@@ -138,9 +181,29 @@ function renderHead() {
   $('p-meta').textContent = `${life.gender === 'M' ? '남' : '여'} · ${b.name}`;
   $('p-age').textContent = life.age;
   $('p-status').textContent = [statusText(life), relationText(life)].filter(Boolean).join(' · ');
-  $('p-stats').innerHTML = statBars(life);
   $('p-money').textContent = formatMoney(netWorth(life));
   $('btn-next').textContent = `다음 해 · ${life.age + 1}세`;
+
+  // 능력치 막대는 다시 그리지 않고 값만 바꿔야 막대가 부드럽게 움직입니다.
+  const now = viewSnapshot(life);
+  $('p-stats').querySelectorAll('.stat').forEach((row, i) => {
+    const k = STATS[i];
+    row.querySelector('.stat-bar i').style.width = `${now[k]}%`;
+    row.querySelector('.stat-num').textContent = now[k];
+    const d = now[k] - lastShown[k];
+    flashDelta(row.querySelector('.delta'), d, d > 0 ? `+${d}` : `${d}`);
+  });
+  const dm = now.net - lastShown.net;
+  flashDelta($('p-money-delta'), dm, (dm > 0 ? '+' : '') + formatMoney(dm));
+  lastShown = now;
+
+  // 인생 단계 막대
+  $('p-stages').querySelectorAll('.stage').forEach((el, i) => {
+    const st = STAGES[i];
+    const p = life.age > st.to ? 1 : life.age < st.from ? 0 : (life.age - st.from + 1) / (st.to - st.from + 1);
+    el.querySelector('b').style.width = `${Math.round(p * 100)}%`;
+    el.classList.toggle('now', stageOf(life.age) === st);
+  });
 }
 
 function entryHtml(e) {
@@ -153,24 +216,55 @@ function entryHtml(e) {
   return `<p class="entry ${e.kind}">${esc(e.text)}</p>`;
 }
 
-function renderLogInto(list, entries) {
+function newYearGroup(list, label) {
+  const group = document.createElement('li');
+  group.className = 'year';
+  group.innerHTML = `<span class="year-age">${label}</span><div class="year-body"></div>`;
+  list.appendChild(group);
+  return group;
+}
+
+// 아무 일 없던 해가 이어지면 "27–29세 · 조용히 3년이 지나갔습니다"처럼 한 줄로 묶습니다.
+function quietRangeText(n) {
+  return n >= 5 ? `조용히 ${n}년이 흘렀습니다. 인생에는 이런 시절도 필요합니다.` : `조용히 ${n}년이 지나갔습니다.`;
+}
+
+function renderLogInto(list, entries, highlight = false) {
+  const touched = new Set();
   for (const e of entries) {
     let group = list.lastElementChild;
-    if (!group || Number(group.dataset.age) !== e.age) {
-      group = document.createElement('li');
-      group.className = 'year';
-      group.dataset.age = e.age;
-      group.innerHTML = `<span class="year-age">${e.age}세</span><div class="year-body"></div>`;
-      list.appendChild(group);
+    if (e.kind === 'quiet') {
+      if (group && group.dataset.quiet && Number(group.dataset.end) === e.age - 1) {
+        group.dataset.end = e.age;
+        const n = e.age - Number(group.dataset.start) + 1;
+        group.querySelector('.year-age').textContent = `${group.dataset.start}–${e.age}세`;
+        group.querySelector('.entry').textContent = quietRangeText(n);
+      } else {
+        group = newYearGroup(list, `${e.age}세`);
+        group.classList.add('quiet');
+        group.dataset.quiet = '1';
+        group.dataset.start = e.age;
+        group.dataset.end = e.age;
+        group.lastElementChild.insertAdjacentHTML('beforeend', entryHtml(e));
+      }
+    } else {
+      if (!group || group.dataset.quiet || Number(group.dataset.age) !== e.age) {
+        group = newYearGroup(list, `${e.age}세`);
+        group.dataset.age = e.age;
+      }
+      group.lastElementChild.insertAdjacentHTML('beforeend', entryHtml(e));
     }
-    group.lastElementChild.insertAdjacentHTML('beforeend', entryHtml(e));
+    touched.add(group);
+  }
+  if (highlight && !reduceMotion) {
+    touched.forEach((g) => { g.classList.remove('fresh'); void g.offsetWidth; g.classList.add('fresh'); });
   }
 }
 
 function appendLogs(scroll = true) {
   const fresh = life.log.slice(renderedLogs);
   renderedLogs = life.log.length;
-  renderLogInto($('log'), fresh);
+  renderLogInto($('log'), fresh, scroll);
   if (scroll && fresh.length) {
     window.scrollTo({ top: document.documentElement.scrollHeight, behavior: reduceMotion ? 'auto' : 'smooth' });
   }
@@ -190,7 +284,8 @@ function nextYear() {
 
 function openEvent(ev) {
   openEv = ev;
-  $('ev-age').textContent = `${life.age}세`;
+  $('ev-age').textContent = `${life.age}세 · ${stageOf(life.age).name}`;
+  document.querySelector('#modal .sheet').classList.remove('died');
   $('ev-title').textContent = ev.title;
   $('ev-text').textContent = eventText(life, ev);
   const box = $('ev-choices');
@@ -211,9 +306,12 @@ function openEvent(ev) {
 
 function pickChoice(choice) {
   if (!openEv || !$('ev-result').hidden) return;
+  const label = choiceLabel(life, choice);
   const r = resolveChoice(life, openEv, choice);
   $('ev-choices').hidden = true;
+  $('ev-picked').textContent = `→ ${label}`;
   $('ev-result-text').textContent = r.text;
+  document.querySelector('#modal .sheet').classList.toggle('died', r.died);
   $('ev-changes').innerHTML = r.changes.map(changeChip).join('');
   $('btn-ev-ok').textContent = r.died ? '그렇게 삶이 끝났습니다' : '계속';
   $('ev-result').hidden = false;
@@ -260,9 +358,27 @@ function finishLife() {
   dex.best = Math.max(dex.best, result.total);
   dex.deaths[life.death.cause] = (dex.deaths[life.death.cause] || 0) + 1;
   dex.titles[result.title.id] = (dex.titles[result.title.id] || 0) + 1;
+  dex.last = {
+    name: life.name, birthYear: life.birthYear, age: life.age, cause: life.death.cause,
+    title: result.title.name, grade: result.grade, total: result.total,
+  };
   storageSet(DEX_KEY, dex);
   storageDel(SAVE_KEY);
-  renderEnd(result);
+  showCurtain(result);
+}
+
+// 죽음 연출: 어두운 화면에 이름·생몰년·사인·묘비명이 차례로 나타나고 도장이 찍힙니다.
+function showCurtain(result) {
+  $('c-name').textContent = life.name;
+  $('c-years').textContent = `${life.birthYear} – ${life.birthYear + life.age}`;
+  $('c-cause').textContent = `향년 ${life.age}세 · ${DEATHS[life.death.cause].name}`;
+  $('c-epitaph').textContent = life.death.epitaph;
+  $('curtain').hidden = false;
+  $('btn-curtain').onclick = () => {
+    $('curtain').hidden = true;
+    renderEnd(result);
+  };
+  $('btn-curtain').focus({ preventScroll: true });
 }
 
 function renderEnd(result) {
