@@ -414,6 +414,21 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .full-log summary { cursor: pointer; font-family: var(--font-display); font-weight: 700; }
 .full-log .log { padding-bottom: 0; }
 
+/* ---------- 계정 ---------- */
+.account-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  font-size: var(--text-sm); color: var(--ink-2);
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface);
+}
+.account-bar .who-line { min-width: 0; }
+.account-bar b { color: var(--ink); }
+.account-bar .sync { color: var(--muted); font-size: var(--text-xs); margin-left: 4px; }
+.account-bar .sync.error { color: var(--bad); }
+.signup { background: var(--accent-soft); border-color: var(--accent); }
+.signup h2 { font-size: var(--text-lg); }
+.signup p { color: var(--ink-2); font-size: var(--text-sm); }
+.signup .actions { margin-top: 2px; }
+
 /* ---------- 지난 인생 카드 ---------- */
 .last-life { gap: 4px; }
 .last-name { font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); }

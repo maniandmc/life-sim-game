@@ -29,6 +29,13 @@ python3 -m http.server 8000   # → http://localhost:8000
 
 **출발점 보정**이 핵심 규칙입니다. 보육원(×1.3)이나 빚더미 가정(×1.2)에서 태어나면 같은 결과도 더 높게 평가하고, 재벌가(×0.8)는 기대치가 높습니다. 어디서 태어나든 높은 점수를 노릴 수 있습니다.
 
+## 기록 저장과 로그인
+
+- 처음에는 가입 없이 플레이하고, 도감은 브라우저에 저장됩니다.
+- 첫 판을 마치면 결과 화면에서 **Google 계정으로 저장**을 권합니다. 가입하면 그동안의 도감이 계정으로 합쳐져 휴대폰·PC 어디서든 이어집니다.
+- 로그인 기능은 Firebase 설정을 넣어야 켜집니다. 설정 방법: [docs/login-setup.md](docs/login-setup.md)
+- 설정이 없으면(`js/firebase-config.js`가 `null`) 로그인 기능만 꺼지고 게임은 그대로 동작합니다.
+
 ## 파일 구조
 
 | 파일 | 역할 |
@@ -41,7 +48,11 @@ python3 -m http.server 8000   # → http://localhost:8000
 | `js/data/endings.js` | 칭호, 점수 계산, 조문객 |
 | `js/engine.js` | 한 해 진행, 사건 고르기, 선택 결과 적용, 사망 판정 |
 | `js/prompt.js` | 인생 그림 프롬프트 생성 |
-| `js/main.js` | 화면, 저장(localStorage), 인생 그래프 |
+| `js/records.js` | 도감 기록 (판마다 한 줄, 여러 기기 기록 합치기) |
+| `js/account.js` | Google 로그인과 도감 동기화 (Firebase) |
+| `js/firebase-config.js` | Firebase 설정값 (비워 두면 로그인 꺼짐) |
+| `firestore.rules` | 기록 저장소 보안 규칙 (자기 기록만 읽고 쓰기) |
+| `js/main.js` | 화면, 진행 중인 인생 저장, 인생 그래프 |
 | `tools/simulate.js` | 수천 번 자동 플레이로 균형과 오류 점검 |
 
 ## 사건 추가하기

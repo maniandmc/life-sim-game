@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// 인생 한 판 · Firestore 보안 규칙
+// 플레이어는 로그인한 자기 문서(players/{자기 uid})만 읽고 쓸 수 있습니다.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /players/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['records', 'updatedAt']);
+    }
+  }
+}

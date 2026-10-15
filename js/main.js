@@ -1,7 +1,8 @@
 // 화면(UI)을 담당하는 파일입니다. 게임 규칙은 engine.js, 내용은 data 폴더에 있습니다.
 
 const SAVE_KEY = 'life-sim-save-v1';
-const DEX_KEY = 'life-sim-dex-v1';
+const SIGNUP_LATER_KEY = 'life-sim-signup-later'; // "나중에"를 누른 시점의 인생 수
+const SIGNUP_ASK_AGAIN = 5;                        // "나중에" 후 몇 판 뒤에 다시 권할지
 const AUTO_DELAY = 550; // 자동 진행 간격(ms)
 const $ = (id) => document.getElementById(id);
 const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -23,19 +24,9 @@ const STAGES = [
 ];
 function stageOf(age) { return STAGES.find((st) => age <= st.to) || STAGES[STAGES.length - 1]; }
 
-// ---------- 저장 (브라우저 localStorage, 실패해도 게임은 계속) ----------
+// ---------- 저장 (진행 중인 인생은 이 브라우저에, 도감은 records.js) ----------
 
-function storageGet(key) {
-  try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; }
-}
-function storageSet(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* 저장 불가 환경 */ }
-}
-function storageDel(key) {
-  try { localStorage.removeItem(key); } catch (e) { /* 저장 불가 환경 */ }
-}
 function save() { if (life && life.alive) storageSet(SAVE_KEY, life); }
-function loadDex() { return storageGet(DEX_KEY) || { lives: 0, best: 0, deaths: {}, titles: {} }; }
 
 // ---------- 공통 ----------
 
@@ -125,7 +116,7 @@ function renderStart() {
 }
 
 function renderLastLife() {
-  const last = loadDex().last;
+  const last = recordStats(loadRecords()).last;
   $('last-life').hidden = !last;
   if (!last) return;
   const cause = DEATHS[last.cause] ? DEATHS[last.cause].name : '';
@@ -137,7 +128,7 @@ function renderLastLife() {
 }
 
 function renderDex() {
-  const dex = loadDex();
+  const dex = recordStats(loadRecords());
   const deathIds = Object.keys(DEATHS);
   const found = deathIds.filter((id) => dex.deaths[id]).length;
   const titlesFound = TITLES.filter((t) => dex.titles[t.id]).length;
@@ -412,16 +403,11 @@ function finishLife() {
   $('modal').hidden = true;
   const result = computeResult(life);
   lastResult = { life, result };
-  const dex = loadDex();
-  dex.lives += 1;
-  dex.best = Math.max(dex.best, result.total);
-  dex.deaths[life.death.cause] = (dex.deaths[life.death.cause] || 0) + 1;
-  dex.titles[result.title.id] = (dex.titles[result.title.id] || 0) + 1;
-  dex.last = {
+  saveRecords(addLifeRecord(loadRecords(), {
     name: life.name, birthYear: life.birthYear, age: life.age, cause: life.death.cause,
-    title: result.title.name, grade: result.grade, total: result.total,
-  };
-  storageSet(DEX_KEY, dex);
+    titleId: result.title.id, title: result.title.name, grade: result.grade, total: result.total,
+  }));
+  if (Account.user) syncRecords();
   storageDel(SAVE_KEY);
   showCurtain(result);
 }
@@ -471,6 +457,8 @@ function renderEnd(result) {
     ? life.achievements.map((id) => `<span class="chip">${esc(ACHIEVEMENTS[id].name)} +${ACHIEVEMENTS[id].points}</span>`).join('')
     : '<span class="chip locked">이번 생에는 업적이 없었습니다</span>';
 
+  signupJustSaved = false;
+  renderSignupCard();
   $('prompt-text').value = buildImagePrompt(life, result);
   $('end-log').innerHTML = '';
   renderLogInto($('end-log'), life.log);
@@ -589,6 +577,91 @@ window.addEventListener('resize', () => {
   resizeTimer = setTimeout(drawCharts, 150);
 });
 
+// ---------- 계정 (Google 로그인) ----------
+
+let signupJustSaved = false; // 결과 화면에서 방금 가입해 저장했는지
+
+function accountName() {
+  const u = Account.user;
+  return u ? (u.name || u.email.split('@')[0] || 'Google 계정') : '';
+}
+
+// 시작 화면의 계정 줄
+function renderAccountBar() {
+  const bar = $('account-bar');
+  const on = Account.enabled || Account.status === 'error';
+  bar.hidden = !on;
+  if (!on) return;
+  if (Account.status === 'error' && !Account.user) {
+    bar.innerHTML = '<span class="who-line">로그인 서버에 연결하지 못했습니다. 기록은 이 기기에 저장됩니다.</span>';
+    return;
+  }
+  if (!Account.user) {
+    bar.innerHTML = `<span class="who-line">이 기기에만 저장 중입니다. 계정이 있다면 로그인하세요.</span>
+      <button id="btn-login" class="btn small">Google로 로그인</button>`;
+    $('btn-login').addEventListener('click', doSignIn);
+    return;
+  }
+  const sync = { syncing: '동기화 중…', synced: '동기화됨', error: '동기화 실패 · 이 기기에 저장됨' }[Account.status] || '';
+  bar.innerHTML = `<span class="who-line"><b>${esc(accountName())}</b> 님의 도감
+      <span class="sync ${Account.status === 'error' ? 'error' : ''}">${esc(sync)}</span></span>
+    <button id="btn-logout" class="btn small ghost">로그아웃</button>`;
+  $('btn-logout').addEventListener('click', doSignOut);
+}
+
+// 결과 화면의 가입 권유 카드: 첫 판을 마친 뒤부터, 로그인하지 않은 경우에만
+function shouldAskSignup() {
+  if (!Account.enabled || Account.user) return false;
+  const lives = recordStats(loadRecords()).lives;
+  const later = storageGet(SIGNUP_LATER_KEY);
+  return lives >= 1 && (later === null || lives - later >= SIGNUP_ASK_AGAIN);
+}
+
+function renderSignupCard() {
+  const card = $('signup-card');
+  if (signupJustSaved && Account.user) {
+    card.hidden = false;
+    card.innerHTML = `<h2>저장했습니다</h2>
+      <p>${esc(accountName())} 님의 계정에 도감이 저장됐습니다. 이제 휴대폰과 PC 어디서 해도 기록이 이어집니다.</p>`;
+    return;
+  }
+  card.hidden = !shouldAskSignup();
+  if (card.hidden) return;
+  const lives = recordStats(loadRecords()).lives;
+  card.innerHTML = `<h2>${lives === 1 ? '첫 인생, 수고하셨습니다' : '이 기록, 계속 모아 볼까요?'}</h2>
+    <p>Google 계정으로 가입하면 지금까지의 도감과 최고 점수가 계정에 저장됩니다. 기기를 바꾸거나 브라우저 기록을 지워도 이어서 모을 수 있습니다.</p>
+    <div class="actions">
+      <button id="btn-signup" class="btn primary">Google로 저장하기</button>
+      <button id="btn-signup-later" class="btn">나중에</button>
+    </div>`;
+  $('btn-signup').addEventListener('click', async () => {
+    const ok = await doSignIn();
+    if (ok) { signupJustSaved = true; renderSignupCard(); }
+  });
+  $('btn-signup-later').addEventListener('click', () => {
+    storageSet(SIGNUP_LATER_KEY, recordStats(loadRecords()).lives);
+    card.hidden = true;
+  });
+}
+
+async function doSignIn() {
+  const r = await signIn();
+  if (r === 'blocked') toast('팝업이 차단됐습니다. 팝업을 허용한 뒤 다시 눌러 주세요');
+  else if (r === 'error') toast('로그인하지 못했습니다. 잠시 후 다시 시도해 주세요');
+  return r === 'ok';
+}
+
+async function doSignOut() {
+  await signOut();
+  toast('로그아웃했습니다. 기록은 계정에 남아 있습니다');
+}
+
+onAccountChange(() => {
+  renderAccountBar();
+  if (!$('screen-start').hidden) { renderLastLife(); renderDex(); }
+  if (!$('screen-end').hidden && !$('signup-card').hidden) renderSignupCard();
+});
+
 // ---------- 프롬프트 복사 ----------
 
 function copyPrompt() {
@@ -649,3 +722,4 @@ document.addEventListener('keydown', (e) => {
 });
 
 renderStart();
+initAccount();
