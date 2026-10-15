@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>인생 한 판</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="wrap">
+
+    <!-- 시작 화면 -->
+    <section id="screen-start" class="screen">
+      <div class="hero">
+        <p class="eyebrow">인생 시뮬레이션</p>
+        <h1>인생 한 판</h1>
+        <p class="lede">태어나는 곳은 고를 수 없습니다.<br>나머지는 당신이 고릅니다.</p>
+        <div class="actions">
+          <button id="btn-born" class="btn primary">태어나기</button>
+          <button id="btn-continue" class="btn" hidden>이어서 살기</button>
+        </div>
+      </div>
+      <ul class="how">
+        <li><b>다음 해</b> 버튼을 누르면 한 살씩 먹고, 사건이 생기면 선택합니다.</li>
+        <li>건강·행복·지능·관계·돈이 <b>선택과 운</b>에 따라 바뀝니다.</li>
+        <li>죽으면 <b>점수와 칭호</b>, 그리고 내 인생을 그림으로 만들 <b>프롬프트</b>가 나옵니다.</li>
+      </ul>
+      <section class="dex" aria-labelledby="dex-title">
+        <h2 id="dex-title">인생 도감</h2>
+        <div id="dex-summary" class="dex-summary"></div>
+        <h3>사망 원인</h3>
+        <div id="dex-deaths" class="dex-deaths"></div>
+        <h3>칭호</h3>
+        <div id="dex-titles" class="chips"></div>
+      </section>
+    </section>
+
+    <!-- 출생 화면 -->
+    <section id="screen-birth" class="screen" hidden>
+      <p class="eyebrow">출생 신고서</p>
+      <article class="card form">
+        <div class="form-head">
+          <h2 id="birth-name" class="name"></h2>
+          <p id="birth-meta" class="meta"></p>
+        </div>
+        <dl class="form-row">
+          <dt>가정 환경</dt>
+          <dd><b id="birth-env"></b><p id="birth-text" class="birth-text"></p></dd>
+        </dl>
+        <dl class="form-row">
+          <dt>타고난 특성</dt>
+          <dd id="birth-traits"></dd>
+        </dl>
+        <dl class="form-row">
+          <dt>점수 보정</dt>
+          <dd id="birth-mult"></dd>
+        </dl>
+        <div id="birth-stats" class="stats"></div>
+      </article>
+      <div class="actions">
+        <button id="btn-start-life" class="btn primary">이 인생을 산다</button>
+        <button id="btn-reroll" class="btn">다시 태어나기</button>
+      </div>
+    </section>
+
+    <!-- 플레이 화면 -->
+    <section id="screen-play" class="screen" hidden>
+      <header class="life-head">
+        <div class="life-row">
+          <div class="who">
+            <p><span id="p-name" class="name"></span> <span id="p-meta" class="meta"></span></p>
+            <p id="p-status" class="status"></p>
+          </div>
+          <p class="age"><span id="p-age">0</span><small>세</small></p>
+        </div>
+        <div id="p-stats" class="stats compact"></div>
+        <p class="money">순자산 <b id="p-money"></b></p>
+      </header>
+      <ol id="log" class="log" aria-live="polite"></ol>
+      <div class="actionbar">
+        <div class="actionbar-inner">
+          <button id="btn-home" class="btn ghost">처음으로</button>
+          <button id="btn-auto" class="btn" aria-pressed="false">자동 진행</button>
+          <button id="btn-next" class="btn primary">다음 해</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 엔딩 화면 -->
+    <section id="screen-end" class="screen" hidden>
+      <article class="tomb">
+        <p class="tomb-name"><span class="go">故</span> <span id="t-name"></span></p>
+        <p id="t-years" class="tomb-years"></p>
+        <p id="t-epitaph" class="tomb-epitaph"></p>
+        <p class="tomb-cause"><span id="t-age"></span> · <span id="t-cause"></span></p>
+        <span class="seal" aria-hidden="true">卒</span>
+      </article>
+      <p id="t-death-text" class="death-text"></p>
+      <p id="t-guests" class="guests"></p>
+
+      <section class="card score" aria-labelledby="r-title">
+        <div class="score-head">
+          <div>
+            <p class="eyebrow">인생 칭호</p>
+            <h2 id="r-title"></h2>
+          </div>
+          <div class="grade-box">
+            <span id="r-grade" class="grade"></span>
+            <span id="r-total" class="total"></span>
+          </div>
+        </div>
+        <table class="score-table">
+          <tbody id="r-parts"></tbody>
+          <tfoot id="r-foot"></tfoot>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>인생 그래프</h2>
+        <figure class="chart">
+          <figcaption>행복 <span class="unit">(0~100)</span></figcaption>
+          <div id="chart-happy" class="chart-box"></div>
+        </figure>
+        <figure class="chart">
+          <figcaption>순자산</figcaption>
+          <div id="chart-money" class="chart-box"></div>
+        </figure>
+      </section>
+
+      <section class="card">
+        <h2>인생 하이라이트</h2>
+        <ol id="r-highlights" class="timeline"></ol>
+        <h3>업적</h3>
+        <div id="r-achievements" class="chips"></div>
+      </section>
+
+      <section class="card prompt-card">
+        <h2>내 인생 그림 프롬프트</h2>
+        <p class="hint">아래 문장을 복사해서 ChatGPT, Gemini, Midjourney 같은 그림 AI에 붙여 넣으면 이 인생이 한 장의 그림이 됩니다. 그림 AI가 가장 정확하게 알아듣도록 영어로 만들었습니다.</p>
+        <textarea id="prompt-text" readonly rows="12" aria-label="그림 생성 프롬프트"></textarea>
+        <button id="btn-copy" class="btn primary">프롬프트 복사</button>
+      </section>
+
+      <details class="card full-log">
+        <summary>인생 기록 전체 보기</summary>
+        <ol id="end-log" class="log"></ol>
+      </details>
+
+      <div class="actions">
+        <button id="btn-again" class="btn primary">다시 태어나기</button>
+        <button id="btn-end-home" class="btn">처음 화면으로</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- 사건 선택 창 -->
+  <div id="modal" class="modal" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ev-title">
+      <p id="ev-age" class="eyebrow"></p>
+      <h2 id="ev-title"></h2>
+      <p id="ev-text" class="ev-text"></p>
+      <div id="ev-choices" class="choices"></div>
+      <div id="ev-result" hidden>
+        <p id="ev-result-text" class="ev-result"></p>
+        <div id="ev-changes" class="chips"></div>
+        <button id="btn-ev-ok" class="btn primary wide">계속</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <!-- 순서 중요: 기본 데이터 → 엔진 → 사망·엔딩 → 사건 → 프롬프트 → 화면 -->
+  <script src="js/data/base.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/data/deaths.js"></script>
+  <script src="js/data/endings.js"></script>
+  <script src="js/data/events-early.js"></script>
+  <script src="js/data/events-adult.js"></script>
+  <script src="js/data/events-late.js"></script>
+  <script src="js/prompt.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
