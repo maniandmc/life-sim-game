@@ -5,15 +5,11 @@
 // 아래 값들은 비밀번호가 아니라 "어느 Firebase 프로젝트인지" 알려 주는 공개 식별 정보라서
 // GitHub에 올려도 괜찮습니다. 데이터 보호는 Firestore 보안 규칙(firestore.rules)이 맡습니다.
 
-const FIREBASE_CONFIG = null;
-
-/* Firebase 콘솔에서 복사한 값을 이런 모양으로 넣으면 됩니다.
 const FIREBASE_CONFIG = {
-  apiKey: 'AIza...',
-  authDomain: 'life-sim-game.firebaseapp.com',
-  projectId: 'life-sim-game',
-  storageBucket: 'life-sim-game.appspot.com',
-  messagingSenderId: '1234567890',
-  appId: '1:1234567890:web:abcdef',
+  apiKey: 'AIzaSyAuzTfeiN_u1btSJTMeeCc6192zN-9GWqI',
+  authDomain: 'life-sim-game-18ed9.firebaseapp.com',
+  projectId: 'life-sim-game-18ed9',
+  storageBucket: 'life-sim-game-18ed9.firebasestorage.app',
+  messagingSenderId: '630275942139',
+  appId: '1:630275942139:web:aa0cea3adf1ffe7adbb25e',
 };
-*/
