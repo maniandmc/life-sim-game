@@ -8,6 +8,7 @@ const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-mo
 
 let life = null;        // 지금 살고 있는 인생
 let openEv = null;      // 열려 있는 사건
+let autoOn = false;     // 자동 진행 중인지
 let autoTimer = null;
 let renderedLogs = 0;
 let lastResult = null;
@@ -45,6 +46,27 @@ function esc(text) {
 function show(name) {
   for (const id of ['start', 'birth', 'play', 'end']) $(`screen-${id}`).hidden = id !== name;
   window.scrollTo(0, 0);
+}
+
+// 터치 기기(특히 iOS)에서는 코드로 포커스를 옮기면 페이지가 엉뚱하게 스크롤될 수 있어
+// 키보드로 조작할 때만 포커스를 옮깁니다.
+let usingKeyboard = false;
+document.addEventListener('keydown', () => { usingKeyboard = true; }, true);
+document.addEventListener('pointerdown', () => { usingKeyboard = false; }, true);
+function focusIfKeyboard(el) { if (el && usingKeyboard) el.focus({ preventScroll: true }); }
+
+function distanceFromBottom() {
+  return document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+}
+
+// 부드러운 스크롤이 겹치면 iOS Safari에서 화면이 튈 수 있어서,
+// 자동 진행 중이거나 직전 스크롤이 끝나지 않았으면 즉시 이동합니다.
+let lastSmoothScroll = 0;
+function scrollToBottom() {
+  const now = Date.now();
+  const smooth = !reduceMotion && !autoOn && now - lastSmoothScroll > 700;
+  if (smooth) lastSmoothScroll = now;
+  window.scrollTo({ top: document.documentElement.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
 }
 
 let toastTimer;
@@ -264,10 +286,10 @@ function renderLogInto(list, entries, highlight = false) {
 function appendLogs(scroll = true) {
   const fresh = life.log.slice(renderedLogs);
   renderedLogs = life.log.length;
+  // 자동 진행 중에 위로 올려 지난 기록을 읽고 있으면 맨 아래로 끌어내리지 않습니다.
+  const wasNearBottom = distanceFromBottom() < 160;
   renderLogInto($('log'), fresh, scroll);
-  if (scroll && fresh.length) {
-    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: reduceMotion ? 'auto' : 'smooth' });
-  }
+  if (scroll && fresh.length && (wasNearBottom || !autoOn)) scrollToBottom();
 }
 
 function nextYear() {
@@ -300,8 +322,7 @@ function openEvent(ev) {
   box.hidden = false;
   $('ev-result').hidden = true;
   $('modal').hidden = false;
-  const first = box.querySelector('button');
-  if (first) first.focus({ preventScroll: true });
+  focusIfKeyboard(box.querySelector('button'));
 }
 
 function pickChoice(choice) {
@@ -315,7 +336,7 @@ function pickChoice(choice) {
   $('ev-changes').innerHTML = r.changes.map(changeChip).join('');
   $('btn-ev-ok').textContent = r.died ? '그렇게 삶이 끝났습니다' : '계속';
   $('ev-result').hidden = false;
-  $('btn-ev-ok').focus({ preventScroll: true });
+  focusIfKeyboard($('btn-ev-ok'));
   save();
 }
 
@@ -327,18 +348,28 @@ function closeEvent() {
   renderHead();
   if (!life.alive) return finishLife();
   save();
+  if (autoOn) scheduleAuto(AUTO_DELAY * 2); // 사건 직후에는 결과를 볼 수 있게 잠깐 쉼
 }
 
 // ---------- 자동 진행 ----------
 
+function scheduleAuto(delay = AUTO_DELAY) {
+  clearTimeout(autoTimer);
+  if (!autoOn) return;
+  autoTimer = setTimeout(() => {
+    if (!openEv) nextYear();
+    if (autoOn && !openEv) scheduleAuto();
+  }, delay);
+}
 function startAuto() {
-  stopAuto();
-  autoTimer = setInterval(() => { if (!openEv) nextYear(); }, AUTO_DELAY);
+  autoOn = true;
   $('btn-auto').setAttribute('aria-pressed', 'true');
   $('btn-auto').textContent = '자동 멈춤';
+  scheduleAuto(0);
 }
 function stopAuto() {
-  clearInterval(autoTimer);
+  autoOn = false;
+  clearTimeout(autoTimer);
   autoTimer = null;
   $('btn-auto').setAttribute('aria-pressed', 'false');
   $('btn-auto').textContent = '자동 진행';
@@ -378,7 +409,7 @@ function showCurtain(result) {
     $('curtain').hidden = true;
     renderEnd(result);
   };
-  $('btn-curtain').focus({ preventScroll: true });
+  focusIfKeyboard($('btn-curtain'));
 }
 
 function renderEnd(result) {
@@ -560,7 +591,7 @@ $('btn-continue').addEventListener('click', () => {
   startPlay();
 });
 $('btn-next').addEventListener('click', nextYear);
-$('btn-auto').addEventListener('click', () => (autoTimer ? stopAuto() : startAuto()));
+$('btn-auto').addEventListener('click', () => (autoOn ? stopAuto() : startAuto()));
 $('btn-home').addEventListener('click', () => { save(); renderStart(); });
 $('btn-ev-ok').addEventListener('click', closeEvent);
 $('btn-again').addEventListener('click', newBirth);
