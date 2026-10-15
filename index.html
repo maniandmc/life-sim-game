@@ -44,8 +44,13 @@
       <p class="eyebrow">출생 신고서</p>
       <article class="card form">
         <div class="form-head">
-          <h2 id="birth-name" class="name"></h2>
+          <label for="birth-name" class="eyebrow">이름</label>
+          <div class="name-edit">
+            <input id="birth-name" class="name-input" maxlength="10" autocomplete="off" spellcheck="false" enterkeyhint="go">
+            <button id="btn-name-random" class="btn small" type="button">다른 이름</button>
+          </div>
           <p id="birth-meta" class="meta"></p>
+          <p class="name-hint">그대로 두면 게임이 지어 준 이름으로, 지우고 입력하면 원하는 이름으로 태어납니다.</p>
         </div>
         <dl class="form-row">
           <dt>가정 환경</dt>

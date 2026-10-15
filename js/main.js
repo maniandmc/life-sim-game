@@ -159,10 +159,38 @@ function renderDex() {
 
 // ---------- 출생 ----------
 
+// 이름: 입력칸에 게임이 지은 이름을 미리 채워 둡니다. 그대로 두면 그 이름으로,
+// 직접 입력하면 그 이름으로 태어납니다. 직접 정한 이름은 "다시 태어나기"를 해도 유지됩니다.
+const NAME_MAX = 10;
+let gameName = '';     // 게임이 지은 이름
+let customName = null; // 플레이어가 직접 정한 이름
+
+function cleanName(text) {
+  return String(text).replace(/\s+/g, ' ').trim().slice(0, NAME_MAX);
+}
+
+function rerollName() {
+  let name = gameName;
+  while (name === gameName) name = randomName(life.gender);
+  gameName = name;
+  customName = null;
+  life.name = name;
+  $('birth-name').value = name;
+}
+
+function confirmBirth() {
+  const typed = cleanName($('birth-name').value);
+  life.name = typed || gameName;
+  $('birth-name').value = life.name;
+  startPlay();
+}
+
 function newBirth() {
   life = newLife();
+  gameName = life.name;
+  if (customName) life.name = customName;
   const b = BIRTH_BY_ID[life.birthId];
-  $('birth-name').textContent = life.name;
+  $('birth-name').value = life.name;
   $('birth-meta').textContent = `${life.gender === 'M' ? '남자' : '여자'} · ${life.birthYear}년생`;
   $('birth-env').textContent = b.name;
   $('birth-text').textContent = b.text;
@@ -583,7 +611,15 @@ function copyPrompt() {
 
 $('btn-born').addEventListener('click', newBirth);
 $('btn-reroll').addEventListener('click', newBirth);
-$('btn-start-life').addEventListener('click', startPlay);
+$('btn-start-life').addEventListener('click', confirmBirth);
+$('btn-name-random').addEventListener('click', rerollName);
+$('birth-name').addEventListener('input', () => {
+  const typed = cleanName($('birth-name').value);
+  customName = typed && typed !== gameName ? typed : null;
+});
+$('birth-name').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); confirmBirth(); }
+});
 $('btn-continue').addEventListener('click', () => {
   const saved = storageGet(SAVE_KEY);
   if (!saved || !saved.alive) return renderStart();
