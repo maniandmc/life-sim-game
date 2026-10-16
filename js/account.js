@@ -72,6 +72,49 @@ async function syncRecords() {
   } catch (err) {
     console.warn('[account] 동기화 실패:', err);
     setAccountStatus('error');
+    return;
+  }
+  uploadDetails();
+}
+
+// ---------- 인생 보관소 (players/{uid}/lives/{인생 id}) ----------
+// 전체 기록은 크기가 커서 도감 문서에 넣지 않고 인생마다 문서 하나씩 저장합니다.
+
+function lifeDoc(id) { return playerDoc().collection('lives').doc(id); }
+
+// 이 브라우저에만 있는 전체 기록을 계정에 올립니다.
+async function uploadDetails() {
+  if (!Account.enabled || !Account.user) return;
+  const a = loadArchive();
+  const pending = Object.values(a.lives).filter((d) => !d.up);
+  if (!pending.length) return;
+  try {
+    const batch = firebase.firestore().batch();
+    pending.forEach((d) => {
+      const { up, ...detail } = d;
+      batch.set(lifeDoc(d.id), { detail: JSON.parse(JSON.stringify(detail)), at: d.at });
+    });
+    await batch.commit();
+    const fresh = loadArchive();
+    pending.forEach((d) => { if (fresh.lives[d.id]) fresh.lives[d.id].up = true; });
+    saveArchive(fresh);
+  } catch (err) {
+    console.warn('[account] 보관소 저장 실패:', err.code || err);
+  }
+}
+
+// 이 브라우저에 없는 인생의 전체 기록을 계정에서 불러옵니다. 없으면 null
+async function fetchDetail(id) {
+  if (!Account.enabled || !Account.user) return null;
+  try {
+    const snap = await lifeDoc(id).get();
+    if (!snap.exists) return null;
+    const detail = { ...snap.data().detail, up: true };
+    putDetail(detail);
+    return detail;
+  } catch (err) {
+    console.warn('[account] 보관소 불러오기 실패:', err.code || err);
+    return null;
   }
 }
 
@@ -89,9 +132,10 @@ async function signIn() {
   }
 }
 
-// 로그아웃하면 이 브라우저의 기록은 지웁니다. (계정에는 그대로 남아 있고, 다시 로그인하면 돌아옵니다)
+// 로그아웃하면 이 브라우저의 기록과 보관소는 지웁니다. (계정에는 그대로 남아 있고, 다시 로그인하면 돌아옵니다)
 async function signOut() {
   if (!Account.enabled) return;
   await firebase.auth().signOut();
   saveRecords(emptyRecords());
+  clearArchive();
 }

@@ -569,3 +569,54 @@ h2 .ico { width: 1.05em; height: 1.05em; }
   .dex-summary div:nth-child(even) { border-left: 1px solid var(--line); }
   .dex-summary div:nth-child(n+3) { border-top: 1px solid var(--line); }
 }
+
+/* ---------- 인생 보관소 ---------- */
+.last-life .btn.small { align-self: flex-start; margin-top: 8px; }
+.archive-entry {
+  display: flex; align-items: center; gap: 4px; width: 100%; text-align: left;
+  background: transparent; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  padding: 14px 2px;
+}
+.archive-entry > .ico { width: 24px; height: 24px; margin-right: 8px; }
+.archive-entry-text { flex: 1; display: flex; flex-direction: column; line-height: 1.35; }
+.archive-entry-text b { font-family: var(--font-display); font-size: var(--text-md); }
+.archive-entry-text small { font-size: var(--text-xs); color: var(--muted); }
+.archive-entry-go { font-size: 24px; color: var(--muted); line-height: 1; }
+
+.archive-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: -8px; }
+.archive-bar .btn.small { padding-left: 0; display: inline-flex; align-items: center; }
+.archive-head { display: flex; flex-direction: column; gap: 6px; }
+.archive-head h1 { font-size: 32px; line-height: 1.2; letter-spacing: -0.01em; }
+
+.archive-sort { display: flex; gap: 18px; border-bottom: 1px solid var(--line); }
+.sort-btn {
+  background: transparent; border: 0; padding: 8px 0; margin-bottom: -1px;
+  font-size: var(--text-sm); color: var(--muted); border-bottom: 2px solid transparent;
+}
+.sort-btn[aria-pressed="true"] { color: var(--ink); font-weight: 700; border-bottom-color: var(--ink); }
+
+.archive-list { list-style: none; margin: -12px 0 0; padding: 0; display: flex; flex-direction: column; }
+.archive-list li { border-bottom: 1px solid var(--line); }
+.arc-item {
+  display: grid; grid-template-columns: 42px 1fr auto; gap: 12px; align-items: center;
+  width: 100%; text-align: left; background: transparent; border: 0; padding: 14px 2px;
+}
+@media (hover: hover) { button.arc-item:hover, .archive-entry:hover { background: var(--surface-2); } }
+.arc-item.sealed { opacity: 0.6; }
+.arc-grade {
+  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  border: 1.5px solid var(--accent); color: var(--accent);
+  font-family: var(--font-display); font-weight: 700; font-size: 20px; line-height: 1;
+}
+.arc-grade[data-grade="S"] { border-color: var(--seal); color: var(--seal); }
+.arc-grade[data-grade="D"] { border-color: var(--muted); color: var(--muted); }
+.arc-main { display: flex; flex-direction: column; min-width: 0; line-height: 1.4; }
+.arc-name { font-family: var(--font-display); font-weight: 700; font-size: var(--text-md); }
+.arc-name .go { color: var(--muted); font-weight: 400; }
+.arc-name small { font-family: var(--font-body); font-weight: 400; font-size: var(--text-xs); color: var(--muted); margin-left: 6px; font-variant-numeric: tabular-nums; }
+.arc-title { font-size: var(--text-sm); color: var(--ink-2); }
+.arc-best { color: var(--seal); font-size: var(--text-xs); font-weight: 700; margin-left: 6px; white-space: nowrap; }
+.arc-meta { font-size: var(--text-xs); color: var(--muted); }
+.arc-side { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.35; }
+.arc-side b { font-variant-numeric: tabular-nums; font-size: var(--text-md); }
+.arc-side small { font-size: var(--text-xs); color: var(--muted); font-variant-numeric: tabular-nums; }

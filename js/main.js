@@ -14,6 +14,7 @@ let autoTimer = null;
 let renderedLogs = 0;
 let lastResult = null;
 let lastShown = null;   // 직전에 화면에 보여 준 능력치 (변화량 표시용)
+let endView = null;     // 결과 화면에 보여 주는 인생 기록 (방금 끝낸 인생 또는 보관소에서 연 인생)
 
 const STAGES = [
   { name: '유년기', from: 0, to: 12 },
@@ -35,7 +36,7 @@ function esc(text) {
 }
 
 function show(name) {
-  for (const id of ['start', 'birth', 'play', 'end']) $(`screen-${id}`).hidden = id !== name;
+  for (const id of ['start', 'birth', 'play', 'end', 'archive']) $(`screen-${id}`).hidden = id !== name;
   window.scrollTo(0, 0);
 }
 
@@ -119,15 +120,94 @@ function renderStart() {
 }
 
 function renderLastLife() {
-  const last = recordStats(loadRecords()).last;
+  const rec = loadRecords();
+  const last = recordStats(rec).last;
   $('last-life').hidden = !last;
+  $('btn-archive').hidden = !rec.lives.length;
+  $('archive-entry-count').textContent = `${rec.lives.length}개의 인생`;
   if (!last) return;
   const cause = DEATHS[last.cause] ? DEATHS[last.cause].name : '';
+  const viewable = canOpenLife(last);
   $('last-life').innerHTML = `
     <p class="eyebrow">${ico('grave')}지난 인생</p>
     <p class="last-name"><span class="go">故</span> ${esc(last.name)}<small>${last.birthYear} – ${last.birthYear + last.age}</small></p>
     <p class="last-meta">향년 ${last.age}세 · ${esc(cause)}</p>
-    <p class="last-title"><b>${esc(last.title)}</b> · ${esc(last.grade)}등급 ${last.total}점</p>`;
+    <p class="last-title"><b>${esc(last.title)}</b> · ${esc(last.grade)}등급 ${last.total}점</p>
+    ${viewable ? '<button id="btn-last-open" class="btn small">이 인생 다시 보기</button>' : ''}`;
+  if (viewable) $('btn-last-open').addEventListener('click', () => openArchivedLife(last.id, 'start'));
+}
+
+// ---------- 인생 보관소 ----------
+
+const ARCHIVE_PAGE = 30;
+const ARCHIVE_SORTS = {
+  recent: { label: '최신순', fn: (a, b) => b.at - a.at },
+  score: { label: '점수순', fn: (a, b) => b.total - a.total || b.at - a.at },
+  age: { label: '오래 산 순', fn: (a, b) => b.age - a.age || b.at - a.at },
+};
+let archiveSort = 'recent';
+let archiveShown = ARCHIVE_PAGE;
+let archiveScroll = 0;   // 목록으로 돌아올 때 보던 위치
+let archiveFrom = 'start'; // 다시 보기를 어디서 열었는지 (돌아갈 곳)
+
+// 전체 기록이 이 브라우저에 있거나, 계정에서 불러올 수 있는 인생인지
+function canOpenLife(l) {
+  return !!getDetail(l.id) || (l.hasDetail && !!Account.user);
+}
+
+function lifeDate(at) {
+  const d = new Date(at);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function openArchive(keepPlace = false) {
+  if (!keepPlace) { archiveShown = ARCHIVE_PAGE; archiveScroll = 0; }
+  renderArchive();
+  show('archive');
+  if (keepPlace) window.scrollTo(0, archiveScroll);
+}
+
+function renderArchive() {
+  const lives = [...loadRecords().lives].sort(ARCHIVE_SORTS[archiveSort].fn);
+  const best = lives.reduce((m, l) => Math.max(m, l.total || 0), 0);
+  $('archive-count').textContent = lives.length
+    ? `지금까지 ${lives.length}번 태어나고 ${lives.length}번 떠났습니다.`
+    : '아직 보관된 인생이 없습니다. 한 판을 끝까지 살면 이곳에 남습니다.';
+  $('archive-sort').innerHTML = Object.entries(ARCHIVE_SORTS).map(([key, s]) =>
+    `<button class="sort-btn" data-sort="${key}" aria-pressed="${key === archiveSort}">${esc(s.label)}</button>`).join('');
+  $('archive-list').innerHTML = lives.slice(0, archiveShown).map((l) => {
+    const cause = DEATHS[l.cause] ? DEATHS[l.cause].name : '';
+    const open = canOpenLife(l);
+    const tag = l.total === best && best > 0 ? '<span class="arc-best">최고 기록</span>' : '';
+    return `<li><${open ? `button type="button" data-id="${esc(l.id)}"` : 'div'} class="arc-item${open ? '' : ' sealed'}">
+      <span class="arc-grade" data-grade="${esc(l.grade)}">${esc(l.grade)}</span>
+      <span class="arc-main">
+        <span class="arc-name"><span class="go">故</span> ${esc(l.name)}<small>${l.birthYear} – ${l.birthYear + l.age}</small></span>
+        <span class="arc-title">${esc(l.title)}${tag}</span>
+        <span class="arc-meta">향년 ${l.age}세 · ${esc(cause)}${open ? '' : ' · 요약만 남은 기록'}</span>
+      </span>
+      <span class="arc-side"><b>${(l.total || 0).toLocaleString()}</b><small>${lifeDate(l.at)}</small></span>
+    </${open ? 'button' : 'div'}></li>`;
+  }).join('');
+  $('btn-archive-more').hidden = lives.length <= archiveShown;
+}
+
+async function openArchivedLife(id, from) {
+  archiveFrom = from;
+  if (from === 'archive') archiveScroll = window.scrollY;
+  let detail = getDetail(id);
+  if (!detail) {
+    toast('계정에서 기록을 불러오는 중입니다');
+    detail = await fetchDetail(id);
+  }
+  if (!detail) { toast('이 인생의 자세한 기록을 찾지 못했습니다'); return; }
+  renderEnd(detail, true);
+  $('btn-end-archive-back').textContent = from === 'archive' ? '‹ 보관소' : '‹ 처음으로';
+}
+
+function closeArchivedLife() {
+  if (archiveFrom === 'archive') openArchive(true);
+  else renderStart();
 }
 
 function renderDex() {
@@ -406,65 +486,97 @@ function finishLife() {
   $('modal').hidden = true;
   const result = computeResult(life);
   lastResult = { life, result };
+  const detail = makeDetail(life, result);
+  putDetail(detail);
   saveRecords(addLifeRecord(loadRecords(), {
+    id: detail.id, at: detail.at, hasDetail: true,
     name: life.name, birthYear: life.birthYear, age: life.age, cause: life.death.cause,
     titleId: result.title.id, title: result.title.name, grade: result.grade, total: result.total,
   }));
   if (Account.user) syncRecords();
   storageDel(SAVE_KEY);
-  showCurtain(result);
+  showCurtain(detail);
+}
+
+// 결과 화면을 다시 그리는 데 필요한 것만 담은 한 판의 전체 기록 (보관소에 저장)
+function makeDetail(s, result) {
+  return {
+    id: makeId(), at: Date.now(),
+    name: s.name, gender: s.gender, birthYear: s.birthYear, age: s.age, birthId: s.birthId,
+    cause: s.death.cause, epitaph: s.death.epitaph, guests: result.guests.text,
+    title: { id: result.title.id, name: result.title.name },
+    grade: result.grade, total: result.total, base: result.base, mult: result.mult, parts: result.parts,
+    moments: s.moments.map((m) => ({ age: m.age, ko: m.ko })),
+    achievements: [...s.achievements],
+    history: s.history,
+    log: s.log,
+    prompt: buildImagePrompt(s, result),
+  };
 }
 
 // 죽음 연출: 어두운 화면에 이름·생몰년·사인·묘비명이 차례로 나타나고 도장이 찍힙니다.
-function showCurtain(result) {
-  $('c-name').textContent = life.name;
-  $('c-years').textContent = `${life.birthYear} – ${life.birthYear + life.age}`;
-  $('c-cause').textContent = `향년 ${life.age}세 · ${DEATHS[life.death.cause].name}`;
-  $('c-epitaph').textContent = life.death.epitaph;
+function showCurtain(d) {
+  $('c-name').textContent = d.name;
+  $('c-years').textContent = `${d.birthYear} – ${d.birthYear + d.age}`;
+  $('c-cause').textContent = `향년 ${d.age}세 · ${DEATHS[d.cause].name}`;
+  $('c-epitaph').textContent = d.epitaph;
   $('curtain').hidden = false;
   $('btn-curtain').onclick = () => {
     $('curtain').hidden = true;
-    renderEnd(result);
+    renderEnd(d);
   };
   focusIfKeyboard($('btn-curtain'));
 }
 
-function renderEnd(result) {
-  const d = DEATHS[life.death.cause];
-  const b = BIRTH_BY_ID[life.birthId];
-  $('t-name').textContent = life.name;
-  $('t-years').textContent = `${life.birthYear} – ${life.birthYear + life.age}`;
-  $('t-epitaph').textContent = life.death.epitaph;
-  $('t-age').textContent = `향년 ${life.age}세`;
-  $('t-cause').textContent = d.name;
-  $('t-death-text').textContent = d.text;
-  $('t-guests').textContent = result.guests.text;
+// 결과 화면: 방금 끝낸 인생이든 보관소에서 다시 연 인생이든 같은 기록(detail)으로 그립니다.
+function renderEnd(d, archived = false) {
+  endView = d;
+  const death = DEATHS[d.cause] || { name: '알 수 없음', text: '' };
+  const b = BIRTH_BY_ID[d.birthId] || { name: '어느 집' };
+  $('end-archive-bar').hidden = !archived;
+  $('end-archive-date').textContent = archived ? `${lifeDate(d.at)}에 산 인생` : '';
+  $('t-name').textContent = d.name;
+  $('t-years').textContent = `${d.birthYear} – ${d.birthYear + d.age}`;
+  $('t-epitaph').textContent = d.epitaph;
+  $('t-age').textContent = `향년 ${d.age}세`;
+  $('t-cause').textContent = death.name;
+  $('t-death-text').textContent = death.text;
+  $('t-guests').textContent = d.guests;
 
-  $('r-title').textContent = result.title.name;
-  $('r-grade').textContent = result.grade;
-  $('r-grade').dataset.grade = result.grade;
-  $('r-total').textContent = `${result.total.toLocaleString()}점`;
-  $('r-parts').innerHTML = result.parts.map((p) => `<tr><td>${esc(p.label)}</td><td>${esc(p.hint)}</td><td>${p.value}</td></tr>`).join('');
+  $('r-title').textContent = d.title.name;
+  $('r-grade').textContent = d.grade;
+  $('r-grade').dataset.grade = d.grade;
+  $('r-total').textContent = `${d.total.toLocaleString()}점`;
+  $('r-parts').innerHTML = d.parts.map((p) => `<tr><td>${esc(p.label)}</td><td>${esc(p.hint)}</td><td>${p.value}</td></tr>`).join('');
   $('r-foot').innerHTML = `
-    <tr><td>합계</td><td></td><td>${result.base}</td></tr>
-    <tr><td>출발점 보정</td><td>${esc(b.name)}</td><td>×${result.mult}</td></tr>
-    <tr><td>최종 점수</td><td></td><td>${result.total}</td></tr>`;
+    <tr><td>합계</td><td></td><td>${d.base}</td></tr>
+    <tr><td>출발점 보정</td><td>${esc(b.name)}</td><td>×${d.mult}</td></tr>
+    <tr><td>최종 점수</td><td></td><td>${d.total}</td></tr>`;
 
   const highlights = [
     { age: 0, ko: `${b.name}에서 태어남` },
-    ...[...life.moments].sort((a, c) => a.age - c.age),
-    { age: life.age, ko: `세상을 떠남 · ${d.name}` },
+    ...[...d.moments].sort((a, c) => a.age - c.age),
+    { age: d.age, ko: `세상을 떠남 · ${death.name}` },
   ];
   $('r-highlights').innerHTML = highlights.map((m) => `<li><span class="t-age">${m.age}세</span><span>${esc(m.ko)}</span></li>`).join('');
-  $('r-achievements').innerHTML = life.achievements.length
-    ? life.achievements.map((id) => `<span class="chip">${esc(ACHIEVEMENTS[id].name)} +${ACHIEVEMENTS[id].points}</span>`).join('')
+  const achievements = d.achievements.filter((id) => ACHIEVEMENTS[id]);
+  $('r-achievements').innerHTML = achievements.length
+    ? achievements.map((id) => `<span class="chip">${esc(ACHIEVEMENTS[id].name)} +${ACHIEVEMENTS[id].points}</span>`).join('')
     : '<span class="chip locked">이번 생에는 업적이 없었습니다</span>';
 
-  signupJustSaved = false;
-  renderSignupCard();
-  $('prompt-text').value = buildImagePrompt(life, result);
+  if (archived) {
+    $('signup-card').hidden = true;
+  } else {
+    signupJustSaved = false;
+    renderSignupCard();
+  }
+  $('prompt-text').value = d.prompt;
   $('end-log').innerHTML = '';
-  renderLogInto($('end-log'), life.log);
+  renderLogInto($('end-log'), d.log);
+  $('end-full-log').open = archived; // 보관소에서 열면 연표를 펼쳐 둡니다
+  $('btn-again').hidden = archived;
+  $('btn-end-archive').hidden = !archived;
+  $('btn-end-home').classList.toggle('primary', archived);
 
   show('end');
   drawCharts();
@@ -563,12 +675,12 @@ function drawChart(box, points, opt) {
 }
 
 function drawCharts() {
-  if (!life || life.alive || $('screen-end').hidden) return;
-  drawChart($('chart-happy'), life.history, {
+  if (!endView || $('screen-end').hidden) return;
+  drawChart($('chart-happy'), endView.history, {
     key: 'happy', label: '행복', min: 0, max: 100, step: 50,
     color: 'var(--c-happy)', tick: (v) => v, format: (v) => String(v),
   });
-  drawChart($('chart-money'), life.history, {
+  drawChart($('chart-money'), endView.history, {
     key: 'net', label: '순자산',
     color: 'var(--c-money)', tick: shortMoney, format: formatMoney,
   });
@@ -662,6 +774,7 @@ async function doSignOut() {
 onAccountChange(() => {
   renderAccountBar();
   if (!$('screen-start').hidden) { renderLastLife(); renderDex(); }
+  if (!$('screen-archive').hidden) renderArchive();
   if (!$('screen-end').hidden && !$('signup-card').hidden) renderSignupCard();
 });
 
@@ -708,6 +821,22 @@ $('btn-home').addEventListener('click', () => { save(); renderStart(); });
 $('btn-ev-ok').addEventListener('click', closeEvent);
 $('btn-again').addEventListener('click', newBirth);
 $('btn-end-home').addEventListener('click', renderStart);
+$('btn-end-archive').addEventListener('click', () => openArchive(archiveFrom === 'archive'));
+$('btn-end-archive-back').addEventListener('click', closeArchivedLife);
+$('btn-archive').addEventListener('click', () => openArchive());
+$('btn-archive-back').addEventListener('click', renderStart);
+$('btn-archive-more').addEventListener('click', () => { archiveShown += ARCHIVE_PAGE; renderArchive(); });
+$('archive-sort').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-sort]');
+  if (!btn || btn.dataset.sort === archiveSort) return;
+  archiveSort = btn.dataset.sort;
+  archiveShown = ARCHIVE_PAGE;
+  renderArchive();
+});
+$('archive-list').addEventListener('click', (e) => {
+  const item = e.target.closest('button[data-id]');
+  if (item) openArchivedLife(item.dataset.id, 'archive');
+});
 $('btn-copy').addEventListener('click', copyPrompt);
 
 // 키보드: 스페이스/엔터 = 다음 해, 숫자 = 선택지

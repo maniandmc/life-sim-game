@@ -91,3 +91,43 @@ function recordStats(rec) {
   if (rec.lives.length) st.last = rec.lives.reduce((a, l) => (l.at > a.at ? l : a));
   return st;
 }
+
+// ---------- 인생 보관소: 끝낸 인생의 전체 기록(비석, 점수, 그래프, 연표, 그림 프롬프트) ----------
+// 도감 기록(한 줄 요약)과 따로 둡니다. 크기가 커서(한 판에 10KB 안팎) 이 브라우저에는 최근 것만 남기고,
+// 로그인하면 계정에도 한 판씩 따로 저장해 두었다가 필요할 때 불러옵니다.
+
+const ARCHIVE_KEY = 'life-sim-archive-v1';
+const ARCHIVE_MAX = 100; // 이 브라우저에 남길 최근 인생 수
+
+function loadArchive() {
+  const a = storageGet(ARCHIVE_KEY);
+  return a && a.v === 1 && a.lives && typeof a.lives === 'object' ? a : { v: 1, lives: {} };
+}
+
+// 저장 공간이 모자라면 오래된 인생부터 덜어 내며 다시 시도합니다.
+function saveArchive(a) {
+  const ids = Object.keys(a.lives).sort((x, y) => a.lives[y].at - a.lives[x].at);
+  let keep = Math.min(ids.length, ARCHIVE_MAX);
+  while (true) {
+    const lives = {};
+    ids.slice(0, keep).forEach((id) => { lives[id] = a.lives[id]; });
+    try {
+      localStorage.setItem(ARCHIVE_KEY, JSON.stringify({ v: 1, lives }));
+      a.lives = lives;
+      return true;
+    } catch (e) {
+      if (keep <= 1) return false;
+      keep = Math.floor(keep / 2);
+    }
+  }
+}
+
+function getDetail(id) { return loadArchive().lives[id] || null; }
+
+function putDetail(detail) {
+  const a = loadArchive();
+  a.lives[detail.id] = detail;
+  saveArchive(a);
+}
+
+function clearArchive() { storageDel(ARCHIVE_KEY); }

@@ -8,6 +8,13 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == uid;
       allow create, update: if request.auth != null && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['records', 'updatedAt']);
+
+      // 인생 보관소: 끝낸 인생 한 판의 전체 기록
+      match /lives/{lifeId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['detail', 'at']);
+      }
     }
   }
 }

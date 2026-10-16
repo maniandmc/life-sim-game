@@ -30,6 +30,7 @@
     <symbol id="i-next" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="currentColor" fill-opacity=".28" stroke="none"/><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.5 8.5L14 12l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-auto" viewBox="0 0 24 24"><path d="M4.5 6.5L11 12l-6.5 5.5zM12.5 6.5L19 12l-6.5 5.5z" fill="currentColor" fill-opacity=".28" stroke="none"/><path d="M4.5 6.5L11 12l-6.5 5.5zM12.5 6.5L19 12l-6.5 5.5z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-home" viewBox="0 0 24 24"><path d="M5 11l7-6 7 6v9H5z" fill="currentColor" fill-opacity=".28" stroke="none"/><path d="M4 11.5L12 4.5l8 7M6 10v10h12V10" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 20v-5h4v5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24"><path d="M5 9h14v9.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 18.5z" fill="currentColor" fill-opacity=".28" stroke="none"/><rect x="3.5" y="4.5" width="17" height="4.5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9M10 12.5h4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   </svg>
   <main class="wrap">
 
@@ -45,6 +46,11 @@
         </div>
       </div>
       <section id="last-life" class="card last-life" hidden aria-label="지난 인생"></section>
+      <button id="btn-archive" class="archive-entry" type="button" hidden>
+        <svg class="ico"><use href="#i-archive"/></svg>
+        <span class="archive-entry-text"><b>인생 보관소</b><small id="archive-entry-count"></small></span>
+        <span class="archive-entry-go" aria-hidden="true">›</span>
+      </button>
       <ul class="how">
         <li><b>다음 해</b> 버튼을 누르면 한 살씩 먹고, 사건이 생기면 선택합니다.</li>
         <li>건강·행복·지능·관계·돈이 <b>선택과 운</b>에 따라 바뀝니다.</li>
@@ -59,6 +65,21 @@
         <h3><svg class="ico"><use href="#i-medal"/></svg>칭호</h3>
         <div id="dex-titles" class="chips"></div>
       </section>
+    </section>
+
+    <!-- 인생 보관소 -->
+    <section id="screen-archive" class="screen" hidden>
+      <div class="archive-bar">
+        <button id="btn-archive-back" class="btn ghost small"><svg class="ico"><use href="#i-home"/></svg>처음으로</button>
+      </div>
+      <header class="archive-head">
+        <p class="eyebrow"><svg class="ico"><use href="#i-archive"/></svg>인생 보관소</p>
+        <h1>지난 인생들</h1>
+        <p id="archive-count" class="meta"></p>
+      </header>
+      <div id="archive-sort" class="archive-sort" aria-label="정렬"></div>
+      <ol id="archive-list" class="archive-list"></ol>
+      <button id="btn-archive-more" class="btn" hidden>더 보기</button>
     </section>
 
     <!-- 출생 화면 -->
@@ -120,6 +141,10 @@
 
     <!-- 엔딩 화면 -->
     <section id="screen-end" class="screen" hidden>
+      <div id="end-archive-bar" class="archive-bar" hidden>
+        <button id="btn-end-archive-back" class="btn ghost small">‹ 보관소</button>
+        <span id="end-archive-date" class="meta"></span>
+      </div>
       <article class="tomb">
         <p class="tomb-name"><span class="go">故</span> <span id="t-name"></span></p>
         <p id="t-years" class="tomb-years"></p>
@@ -175,13 +200,14 @@
         <button id="btn-copy" class="btn primary">프롬프트 복사</button>
       </section>
 
-      <details class="card full-log">
+      <details id="end-full-log" class="card full-log">
         <summary>인생 기록 전체 보기</summary>
         <ol id="end-log" class="log"></ol>
       </details>
 
       <div class="actions">
         <button id="btn-again" class="btn primary">다시 태어나기</button>
+        <button id="btn-end-archive" class="btn" hidden>보관소로 돌아가기</button>
         <button id="btn-end-home" class="btn">처음 화면으로</button>
       </div>
     </section>
