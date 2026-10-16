@@ -55,7 +55,7 @@ function buildImagePrompt(s, result) {
     `Scenes along the road, in order:\n${scenes.map((t, i) => `${i + 1}. ${t}`).join('\n')}`,
     extras.join(' '),
     `Mood: ${promptMood(result.avgHappy)}. The feeling of this life in one phrase: "${result.title.en}".`,
-    'Style: hand-drawn storybook illustration, soft watercolor with colored-pencil texture, warm and gently humorous, full of small details, set in modern South Korea.',
+    'Style: Korean webtoon art style, like a full-color panel from a slice-of-life webtoon: clean digital line art, soft cel shading, bright vivid colors, expressive faces with slightly exaggerated comedic reactions, warm and gently humorous, full of small everyday details, set in modern South Korea.',
     'Do not include any text, letters, numbers or speech bubbles. Wide 16:9 format.',
   ].filter(Boolean).join('\n\n');
 }
