@@ -13,8 +13,9 @@ const MEET_PLACES = ['친구 결혼식 뒤풀이에서', '회사 동호회에서
 EVENTS.push(
   // ---------- 군대 ----------
   {
-    id: 'military', age: [20, 24], priority: true,
-    if: (s) => s.gender === 'M' && !s.flags.armyDone,
+    id: 'military', age: [20, 28], priority: true,
+    // 프로게이머는 상무 지원 마감인 27세까지 입대를 미룹니다.
+    if: (s) => s.gender === 'M' && !s.flags.armyDone && (s.job !== 'progamer' || s.age >= 27),
     title: '입영 통지서',
     text: '입영 통지서가 날아왔습니다. 머리를 밀 시간입니다.',
     choices: [
@@ -346,7 +347,7 @@ EVENTS.push(
   // ---------- 연애·결혼·육아 ----------
   {
     id: 'meetSomeone', age: [20, 50], once: false, cooldown: 3,
-    weight: (s) => 0.6 + s.relation / 60,
+    weight: (s) => 1.5 + s.relation / 40,
     if: (s) => !s.partner && !isStudent(s),
     prepare: (s) => { s.tmp.newName = anyName(); s.tmp.place = pick(MEET_PLACES); },
     title: '새로운 만남',
@@ -379,7 +380,7 @@ EVENTS.push(
   },
   {
     id: 'proposal', age: [24, 70], once: false, cooldown: 2,
-    weight: 1.5,
+    weight: 4,
     if: (s) => s.partner && s.partner.status === 'dating' && s.age - s.partner.since >= 1,
     title: '결혼할까?',
     text: '{partner} 님과 만난 지 꽤 됐습니다. 친구들이 "결혼은 언제 하냐"고 묻기 시작했습니다.',
@@ -417,7 +418,7 @@ EVENTS.push(
   },
   {
     id: 'baby', age: [25, 46], once: false, cooldown: 2,
-    weight: (s) => (s.kids.length === 0 ? 2 : 0.8),
+    weight: (s) => (s.kids.length === 0 ? 6 : 2),
     if: (s) => isMarried(s) && !s.flags.dink && s.kids.length < 4,
     title: '아이 계획',
     text: (s) => (s.kids.length === 0 ? '{partner} 님이 조심스럽게 묻습니다. "우리 아기 가질까?"' : '아이가 하나 더 있으면 어떨까 하는 이야기가 나왔습니다.'),
@@ -703,7 +704,7 @@ EVENTS.push(
 
   // ---------- 건강 ----------
   {
-    id: 'exercise', age: [20, 70], once: false, cooldown: 5,
+    id: 'exercise', age: [20, 70], once: false, cooldown: 5, weight: 0.5,
     if: (s) => !s.flags.exercise,
     title: '운동해야 하는데',
     text: '계단 두 층을 올라갔는데 숨이 찹니다. 헬스장 전단지가 오늘따라 눈에 띕니다.',
@@ -1075,7 +1076,7 @@ EVENTS.push(
 
   // ---------- 일상 ----------
   {
-    id: 'reunion', age: [30, 80], once: false, cooldown: 8,
+    id: 'reunion', age: [30, 80], once: false, cooldown: 10, weight: 0.5,
     title: '동창회',
     text: '20년 만의 동창회 공지가 떴습니다. 단톡방이 갑자기 북적입니다.',
     choices: [
@@ -1126,7 +1127,7 @@ EVENTS.push(
     ],
   },
   {
-    id: 'travel', age: [22, 80], once: false, cooldown: 4,
+    id: 'travel', age: [22, 80], once: false, cooldown: 5, weight: 0.5,
     if: (s) => s.money > 500,
     title: '휴가',
     text: '드디어 휴가입니다. 어디로 갈까요?',
@@ -1141,7 +1142,7 @@ EVENTS.push(
     ],
   },
   {
-    id: 'noise', age: [22, 80], once: false, cooldown: 10,
+    id: 'noise', age: [22, 80], once: false, cooldown: 12, weight: 0.5,
     title: '층간소음',
     text: '새벽 1시, 윗집에서 쿵쿵 소리가 납니다. 사흘째입니다.',
     choices: [
@@ -1157,7 +1158,7 @@ EVENTS.push(
     ],
   },
   {
-    id: 'diet', age: [20, 60], once: false, cooldown: 6,
+    id: 'diet', age: [20, 60], once: false, cooldown: 8, weight: 0.5,
     title: '다이어트',
     text: '여름이 다가옵니다. 작년 여름옷이 당신을 거부합니다.',
     choices: [
@@ -1225,7 +1226,7 @@ EVENTS.push(
     ],
   },
   {
-    id: 'mountain', age: [35, 78], once: false, cooldown: 6,
+    id: 'mountain', age: [35, 78], once: false, cooldown: 8, weight: 0.5,
     title: '주말 산행',
     text: '산악회 회원들과 등산 중입니다. 대장님이 지도에 없는 지름길이 있다고 합니다.',
     choices: [

@@ -7,7 +7,7 @@ const vm = require('vm');
 
 const FILES = [
   'js/data/base.js', 'js/engine.js', 'js/data/deaths.js', 'js/data/endings.js',
-  'js/data/events-early.js', 'js/data/events-adult.js', 'js/data/events-late.js', 'js/prompt.js',
+  'js/data/events-early.js', 'js/data/events-adult.js', 'js/data/events-late.js', 'js/data/events-more.js', 'js/prompt.js',
 ];
 for (const f of FILES) vm.runInThisContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), { filename: f });
 

@@ -136,6 +136,11 @@ const JOBS = {
   chairman:  { name: '그룹 회장님',       salary: 200000, happy: -1,  health: -1,   overwork: true, img: 'presiding over a long boardroom table' },
   soldier:   { name: '군 복무 중',        salary: 1000,  happy: -2,   health: 1,    img: 'standing guard in a military uniform at dawn' },
   inmate:    { name: '수감 중',           salary: 0,     happy: -4,   health: -1,   img: 'looking out from behind prison bars' },
+  progamer:  { name: '프로게이머',       salary: 6000,  happy: 1,    health: -1,   img: 'gaming on a glowing esports stage in front of a roaring crowd' },
+  webtoonist:{ name: '웹툰 작가',        salary: 3500,  happy: 0.5,  health: -1,   overwork: true, img: 'drawing comics on a tablet at 3 a.m. surrounded by energy drinks' },
+  gradstudent:{ name: '대학원생',        salary: 1500,  happy: -2,   health: -1,   overwork: true, img: 'sleeping on a lab desk next to a pile of research papers' },
+  professor: { name: '교수',             salary: 8000,  happy: 0.5,  health: 0,    pension: 2400, img: 'lecturing in front of a chalkboard full of equations' },
+  expat:     { name: '해외 직장인',       salary: 6000,  happy: 0,    health: 0,    img: 'commuting through a foreign city with a takeaway coffee' },
   retired:   { name: '은퇴',             salary: 0,     happy: 1,    health: 0,    img: 'enjoying a slow morning walk in a neighborhood park' },
 };
 
@@ -187,6 +192,12 @@ const ACHIEVEMENTS = {
   lottery:     { name: '로또 1등',        points: 10 },
   donor:       { name: '전 재산 기부',    points: 40 },
   centenarian: { name: '100세 달성',      points: 50 },
+  progamer:    { name: '프로게이머 데뷔',  points: 25 },
+  webtoon:     { name: '웹툰 연재',       points: 20 },
+  professor:   { name: '교수 임용',       points: 30 },
+  emigrate:    { name: '해외 정착',       points: 15 },
+  marathon:    { name: '마라톤 풀코스 완주', points: 15 },
+  organDonor:  { name: '장기기증 서약',    points: 10 },
 };
 
 // ---------- 이름 ----------

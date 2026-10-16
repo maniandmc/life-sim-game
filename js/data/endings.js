@@ -20,6 +20,8 @@ const TITLES = [
   { id: 'adventurer',    name: '겁 없는 모험가',             en: 'The Fearless Adventurer',         if: (s) => ['everest', 'skydive', 'fall', 'drown'].includes(s.death.cause) || s.achievements.includes('everest') },
   { id: 'civil',         name: '정년까지 버틴 공무원',        en: 'A Lifelong Public Servant',       if: (s) => (s.career.civil || 0) >= 20 },
   { id: 'workaholic',    name: '일에 바친 인생',             en: 'Married to Work',                 if: (s) => (s.counters.overwork || 0) >= 15 },
+  { id: 'twoCountries',  name: '두 나라에서 산 사람',         en: 'A Life in Two Countries',         if: (s) => s.achievements.includes('emigrate') },
+  { id: 'scholar',       name: '평생 공부한 사람',            en: 'A Lifelong Scholar',              if: (s) => (s.career.professor || 0) >= 10 },
   { id: 'happyOrdinary', name: '평범하지만 행복했던 사람',     en: 'Ordinary but Happy',              if: (s, r) => r.avgHappy >= 62 },
   { id: 'farmer',        name: '흙과 함께한 삶',             en: 'A Life Close to the Soil',        if: (s) => (s.career.farmer || 0) >= 20 },
   { id: 'endured',       name: '버티고 또 버틴 사람',        en: 'The One Who Endured',             if: (s, r) => r.avgHappy < 42 && s.age >= 60 },

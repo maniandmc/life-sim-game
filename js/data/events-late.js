@@ -73,7 +73,7 @@ EVENTS.push(
     ],
   },
   {
-    id: 'kidWedding', age: [45, 90], once: false, cooldown: 2,
+    id: 'kidWedding', age: [45, 90], once: false, cooldown: 2, weight: 3,
     if: (s) => s.kids.some((k) => kidAge(s, k) >= 27 && kidAge(s, k) <= 40 && !k.married),
     prepare: (s) => pickKid(s, (k) => kidAge(s, k) >= 27 && kidAge(s, k) <= 40 && !k.married),
     title: '자녀의 결혼',
@@ -114,7 +114,7 @@ EVENTS.push(
     ],
   },
   {
-    id: 'grandchild', age: [48, 95], once: false, cooldown: 3, weight: 1.3,
+    id: 'grandchild', age: [48, 95], once: false, cooldown: 3, weight: 4,
     if: (s) => s.kids.some((k) => k.married) && s.grandkids < 6,
     title: '손주 탄생',
     text: '손주가 태어났습니다! 신생아실 유리창 앞에서 당신이 제일 오래 서 있었습니다.',
