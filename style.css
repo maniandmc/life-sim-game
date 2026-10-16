@@ -497,9 +497,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 /* =====================================================================
-   시안: 평면 UI + 듀오톤 아이콘
+   평면 UI + 듀오톤 아이콘 (위 기본 규칙을 덮어쓰는 층)
    - 떠 있는 카드(둥근 모서리·그림자·배경 박스)를 걷어 내고, 전체 폭 + 가는 구분선으로 나눕니다.
    - 아이콘 뒤 색 박스 없이, 같은 색의 선과 28% 면으로 된 듀오톤 아이콘만 둡니다.
+   - 사건 창은 예외로, 기본 규칙의 둥근 박스 시트와 박스형 선택지를 그대로 씁니다.
    ===================================================================== */
 .ico {
   width: 1.15em; height: 1.15em; flex-shrink: 0;
@@ -554,16 +555,6 @@ h2 .ico { width: 1.05em; height: 1.05em; }
 .signup .ico { color: var(--accent); }
 .prompt-card textarea { background: transparent; }
 
-/* 사건 창: 떠 있는 둥근 시트 → 화면 아래에 붙은 평평한 판 */
-.sheet { border-radius: 0; border-top: 1px solid var(--line); box-shadow: none; }
-@media (min-width: 640px) { .sheet { border-radius: 0; border: 1px solid var(--line); } }
-.choices { gap: 0; border-top: 1px solid var(--line); }
-.choice {
-  background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
-  padding: 14px 2px;
-}
-.choice:hover { background: transparent; color: var(--accent); }
-
 /* 비석: 그림자·채움 없이 선으로만 */
 .tomb { background: transparent; box-shadow: none; }
 
@@ -573,10 +564,6 @@ h2 .ico { width: 1.05em; height: 1.05em; }
 .btn.primary .ico { color: var(--accent-ink); }
 .btn[aria-pressed="true"] { background: transparent; color: var(--accent); }
 @media (max-width: 420px) { .stat { grid-template-columns: 48px 1fr 24px 26px; } }
-@media (max-width: 639px) {
-  .modal { padding-left: 0; padding-right: 0; }
-  .sheet { max-width: none; }
-}
 @media (max-width: 420px) {
   .dex-summary div + div { border-left: 0; }
   .dex-summary div:nth-child(even) { border-left: 1px solid var(--line); }
