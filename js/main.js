@@ -69,11 +69,14 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
 }
 
+const STAT_ICONS = { health: 'health', happy: 'happy', smarts: 'smarts', relation: 'relation' };
+function ico(name) { return `<svg class="ico"><use href="#i-${name}"/></svg>`; }
+
 function statBars(s) {
   return STATS.map((k) => {
     const v = Math.round(s[k]);
     return `<div class="stat" style="--c:${STAT_INFO[k].color}">
-      <span class="stat-label">${STAT_INFO[k].label}</span>
+      <span class="stat-label">${ico(STAT_ICONS[k])}${STAT_INFO[k].label}</span>
       <span class="stat-bar"><i style="width:${v}%"></i></span>
       <span class="stat-num">${v}</span>
       <span class="delta"></span>
@@ -121,7 +124,7 @@ function renderLastLife() {
   if (!last) return;
   const cause = DEATHS[last.cause] ? DEATHS[last.cause].name : '';
   $('last-life').innerHTML = `
-    <p class="eyebrow">지난 인생</p>
+    <p class="eyebrow">${ico('grave')}지난 인생</p>
     <p class="last-name"><span class="go">故</span> ${esc(last.name)}<small>${last.birthYear} – ${last.birthYear + last.age}</small></p>
     <p class="last-meta">향년 ${last.age}세 · ${esc(cause)}</p>
     <p class="last-title"><b>${esc(last.title)}</b> · ${esc(last.grade)}등급 ${last.total}점</p>`;
@@ -133,10 +136,10 @@ function renderDex() {
   const found = deathIds.filter((id) => dex.deaths[id]).length;
   const titlesFound = TITLES.filter((t) => dex.titles[t.id]).length;
   $('dex-summary').innerHTML = `
-    <div><b>${dex.lives}</b><span>살아 본 인생</span></div>
-    <div><b>${dex.best}</b><span>최고 점수</span></div>
-    <div><b>${found}/${deathIds.length}</b><span>사망 원인</span></div>
-    <div><b>${titlesFound}/${TITLES.length}</b><span>칭호</span></div>`;
+    <div>${ico('hourglass')}<b>${dex.lives}</b><span>살아 본 인생</span></div>
+    <div>${ico('trophy')}<b>${dex.best}</b><span>최고 점수</span></div>
+    <div>${ico('grave')}<b>${found}/${deathIds.length}</b><span>사망 원인</span></div>
+    <div>${ico('medal')}<b>${titlesFound}/${TITLES.length}</b><span>칭호</span></div>`;
   $('dex-deaths').innerHTML = DEATH_KINDS.map((kind) => {
     const chips = deathIds.filter((id) => DEATHS[id].kind === kind).map((id) => (dex.deaths[id]
       ? `<span class="chip">${esc(DEATHS[id].name)} ×${dex.deaths[id]}</span>`
@@ -223,7 +226,7 @@ function renderHead() {
   $('p-age').textContent = life.age;
   $('p-status').textContent = [statusText(life), relationText(life)].filter(Boolean).join(' · ');
   $('p-money').textContent = formatMoney(netWorth(life));
-  $('btn-next').textContent = `다음 해 · ${life.age + 1}세`;
+  $('btn-next').innerHTML = `${ico('next')}<span>다음 해 · ${life.age + 1}세</span>`;
 
   // 능력치 막대는 다시 그리지 않고 값만 바꿔야 막대가 부드럽게 움직입니다.
   const now = viewSnapshot(life);
@@ -383,7 +386,7 @@ function scheduleAuto(delay = AUTO_DELAY) {
 function startAuto() {
   autoOn = true;
   $('btn-auto').setAttribute('aria-pressed', 'true');
-  $('btn-auto').textContent = '자동 멈춤';
+  $('btn-auto').querySelector('.label').textContent = '멈춤';
   scheduleAuto(0);
 }
 function stopAuto() {
@@ -391,7 +394,7 @@ function stopAuto() {
   clearTimeout(autoTimer);
   autoTimer = null;
   $('btn-auto').setAttribute('aria-pressed', 'false');
-  $('btn-auto').textContent = '자동 진행';
+  $('btn-auto').querySelector('.label').textContent = '자동';
 }
 
 // ---------- 엔딩 ----------
@@ -597,13 +600,13 @@ function renderAccountBar() {
     return;
   }
   if (!Account.user) {
-    bar.innerHTML = `<span class="who-line">이 기기에만 저장 중입니다. 계정이 있다면 로그인하세요.</span>
+    bar.innerHTML = `<span class="who-line">${ico('user')}이 기기에만 저장 중입니다. 계정이 있다면 로그인하세요.</span>
       <button id="btn-login" class="btn small">Google로 로그인</button>`;
     $('btn-login').addEventListener('click', doSignIn);
     return;
   }
   const sync = { syncing: '동기화 중…', synced: '동기화됨', error: '동기화 실패 · 이 기기에 저장됨' }[Account.status] || '';
-  bar.innerHTML = `<span class="who-line"><b>${esc(accountName())}</b> 님의 도감
+  bar.innerHTML = `<span class="who-line">${ico('user')}<b>${esc(accountName())}</b> 님의 도감
       <span class="sync ${Account.status === 'error' ? 'error' : ''}">${esc(sync)}</span></span>
     <button id="btn-logout" class="btn small ghost">로그아웃</button>`;
   $('btn-logout').addEventListener('click', doSignOut);
@@ -621,14 +624,14 @@ function renderSignupCard() {
   const card = $('signup-card');
   if (signupJustSaved && Account.user) {
     card.hidden = false;
-    card.innerHTML = `<h2>저장했습니다</h2>
+    card.innerHTML = `<h2>${ico('cloud')}저장했습니다</h2>
       <p>${esc(accountName())} 님의 계정에 도감이 저장됐습니다. 이제 휴대폰과 PC 어디서 해도 기록이 이어집니다.</p>`;
     return;
   }
   card.hidden = !shouldAskSignup();
   if (card.hidden) return;
   const lives = recordStats(loadRecords()).lives;
-  card.innerHTML = `<h2>${lives === 1 ? '첫 인생, 수고하셨습니다' : '이 기록, 계속 모아 볼까요?'}</h2>
+  card.innerHTML = `<h2>${ico('cloud')}${lives === 1 ? '첫 인생, 수고하셨습니다' : '이 기록, 계속 모아 볼까요?'}</h2>
     <p>Google 계정으로 가입하면 지금까지의 도감과 최고 점수가 계정에 저장됩니다. 기기를 바꾸거나 브라우저 기록을 지워도 이어서 모을 수 있습니다.</p>
     <div class="actions">
       <button id="btn-signup" class="btn primary">Google로 저장하기</button>
